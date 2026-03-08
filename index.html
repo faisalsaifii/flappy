@@ -7,23 +7,23 @@
 
     <style>
       body {
+        margin: 0;
         overflow: hidden;
       }
+
       canvas {
-        background: #70c5ce;
+        display: block;
       }
     </style>
   </head>
 
-  <body
-    class="bg-gray-900 flex items-center justify-center h-screen text-white"
-  >
-    <div class="relative">
+  <body class="bg-gray-900 text-white">
+    <div class="relative w-screen h-screen">
       <!-- MENU -->
 
       <div
         id="menu"
-        class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-10"
+        class="absolute inset-0 w-full h-full bg-black/60 flex flex-col items-center justify-center z-10"
       >
         <h1 class="text-5xl font-bold mb-6">Flappy Bird</h1>
 
@@ -34,14 +34,14 @@
           Start Game
         </button>
 
-        <p class="mt-3 opacity-70">Space / Click / Tap</p>
+        <p class="mt-3 opacity-70">Space / Tap</p>
       </div>
 
       <!-- GAME OVER -->
 
       <div
         id="gameOver"
-        class="hidden absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10"
+        class="hidden absolute inset-0 w-full h-full bg-black/70 flex flex-col items-center justify-center z-10"
       >
         <h1 class="text-4xl font-bold mb-3">Game Over</h1>
 
@@ -50,7 +50,7 @@
 
         <div
           id="leaderboard"
-          class="mt-6 bg-black/40 p-4 rounded-xl w-48 text-center"
+          class="mt-6 bg-black/40 p-4 rounded-xl w-56 text-center"
         ></div>
 
         <button
@@ -61,21 +61,24 @@
         </button>
       </div>
 
-      <canvas
-        id="game"
-        width="420"
-        height="640"
-        class="rounded-xl shadow-2xl"
-      ></canvas>
+      <canvas id="game"></canvas>
 
       <div id="score" class="absolute top-4 left-4 text-3xl font-bold">0</div>
     </div>
 
     <script>
-      /* canvas */
-
       const canvas = document.getElementById("game");
       const ctx = canvas.getContext("2d");
+
+      /* RESPONSIVE SIZE */
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      resize();
+      window.addEventListener("resize", resize);
 
       /* state */
 
@@ -101,12 +104,10 @@
       const jumpPower = -6;
       const maxFall = 7;
 
-      /* reset */
-
       function reset() {
         bird = {
-          x: 90,
-          y: 300,
+          x: canvas.width * 0.25,
+          y: canvas.height * 0.5,
           vel: 0,
           size: 20,
           frame: 0,
@@ -119,8 +120,6 @@
 
         document.getElementById("score").innerText = 0;
       }
-
-      /* start */
 
       function start() {
         document.getElementById("menu").classList.add("hidden");
@@ -161,7 +160,7 @@
         let gap = 170 - difficulty * 5;
         if (gap < 110) gap = 110;
 
-        let top = Math.random() * 300 + 40;
+        let top = Math.random() * (canvas.height * 0.5) + 40;
 
         pipes.push({
           x: canvas.width,
@@ -179,8 +178,6 @@
         }
       }, 1800);
 
-      /* update */
-
       function update() {
         if (!running || paused) return;
 
@@ -188,6 +185,7 @@
         if (bird.vel > maxFall) bird.vel = maxFall;
 
         bird.y += bird.vel;
+
         bird.frame += 0.25;
 
         if (bird.y > canvas.height - 80 || bird.y < 0) {
@@ -211,6 +209,7 @@
             score++;
 
             document.getElementById("score").innerText = score;
+
             playSound(900);
           }
         });
@@ -274,8 +273,6 @@ ${lerp(c1[2], c2[2], t)}
         return lerpColor(night, day, (t - 20) / 10);
       }
 
-      /* background */
-
       function drawBackground() {
         ctx.fillStyle = skyColor();
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -293,8 +290,6 @@ ${lerp(c1[2], c2[2], t)}
           if (c.x < -50) c.x = canvas.width + 50;
         });
       }
-
-      /* bird */
 
       function drawBird() {
         let wing = Math.sin(bird.frame) * 5;
@@ -331,8 +326,6 @@ ${lerp(c1[2], c2[2], t)}
         ctx.restore();
       }
 
-      /* pipes */
-
       function drawPipes() {
         pipes.forEach((pipe) => {
           ctx.fillStyle = "#22c55e";
@@ -353,8 +346,6 @@ ${lerp(c1[2], c2[2], t)}
         });
       }
 
-      /* ground */
-
       function drawGround() {
         ctx.fillStyle = "#ded895";
         ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
@@ -371,16 +362,12 @@ ${lerp(c1[2], c2[2], t)}
         }
       }
 
-      /* particles */
-
       function drawParticles() {
         particles.forEach((p) => {
           ctx.fillStyle = "orange";
           ctx.fillRect(p.x, p.y, 4, 4);
         });
       }
-
-      /* draw */
 
       function draw() {
         drawBackground();
@@ -390,7 +377,7 @@ ${lerp(c1[2], c2[2], t)}
         drawGround();
       }
 
-      /* leaderboard UI */
+      /* leaderboard */
 
       function renderLeaderboard() {
         let html = "<div class='font-bold mb-2'>Top Scores</div>";
@@ -406,8 +393,6 @@ ${lerp(c1[2], c2[2], t)}
 
         document.getElementById("leaderboard").innerHTML = html;
       }
-
-      /* game over */
 
       function gameOver() {
         running = false;
@@ -433,16 +418,12 @@ ${lerp(c1[2], c2[2], t)}
         playSound(200);
       }
 
-      /* loop */
-
       function loop() {
         update();
         draw();
 
         requestAnimationFrame(loop);
       }
-
-      /* sound */
 
       function playSound(freq) {
         let audio = new (window.AudioContext || window.webkitAudioContext)();
@@ -461,8 +442,6 @@ ${lerp(c1[2], c2[2], t)}
         osc.start();
         osc.stop(audio.currentTime + 0.1);
       }
-
-      /* clouds */
 
       function initClouds() {
         for (let i = 0; i < 5; i++) {
