@@ -23,7 +23,7 @@
 
       <div
         id="menu"
-        class="absolute inset-0 w-full h-full bg-black/60 flex flex-col items-center justify-center z-10"
+        class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-10"
       >
         <h1 class="text-5xl font-bold mb-6">Flappy Bird</h1>
 
@@ -41,7 +41,7 @@
 
       <div
         id="gameOver"
-        class="hidden absolute inset-0 w-full h-full bg-black/70 flex flex-col items-center justify-center z-10"
+        class="hidden absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10"
       >
         <h1 class="text-4xl font-bold mb-3">Game Over</h1>
 
@@ -80,7 +80,35 @@
       resize();
       window.addEventListener("resize", resize);
 
-      /* state */
+      /* AUDIO FIX */
+
+      let audioCtx = null;
+
+      function initAudio() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+
+      function playSound(freq) {
+        if (!audioCtx) return;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.frequency.value = freq;
+        osc.type = "square";
+
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+      }
+
+      /* GAME STATE */
 
       let running = false;
       let paused = false;
@@ -98,7 +126,7 @@
       let best = localStorage.getItem("flappyBest") || 0;
       let leaderboard = JSON.parse(localStorage.getItem("flappyBoard") || "[]");
 
-      /* physics */
+      /* PHYSICS */
 
       const gravity = 0.32;
       const jumpPower = -6;
@@ -122,6 +150,8 @@
       }
 
       function start() {
+        initAudio();
+
         document.getElementById("menu").classList.add("hidden");
         document.getElementById("gameOver").classList.add("hidden");
 
@@ -136,7 +166,7 @@
         start();
       }
 
-      /* controls */
+      /* CONTROLS */
 
       function jump() {
         if (!running || paused) return;
@@ -154,7 +184,7 @@
       canvas.addEventListener("click", jump);
       canvas.addEventListener("touchstart", jump);
 
-      /* pipes */
+      /* PIPES */
 
       function spawnPipe() {
         let gap = 170 - difficulty * 5;
@@ -178,6 +208,8 @@
         }
       }, 1800);
 
+      /* UPDATE */
+
       function update() {
         if (!running || paused) return;
 
@@ -185,7 +217,6 @@
         if (bird.vel > maxFall) bird.vel = maxFall;
 
         bird.y += bird.vel;
-
         bird.frame += 0.25;
 
         if (bird.y > canvas.height - 80 || bird.y < 0) {
@@ -209,7 +240,6 @@
             score++;
 
             document.getElementById("score").innerText = score;
-
             playSound(900);
           }
         });
@@ -221,7 +251,7 @@
         updateParticles();
       }
 
-      /* particles */
+      /* PARTICLES */
 
       function explode() {
         for (let i = 0; i < 20; i++) {
@@ -245,18 +275,18 @@
         particles = particles.filter((p) => p.life > 0);
       }
 
-      /* sky transition */
+      /* SKY TRANSITION */
 
       function lerp(a, b, t) {
         return a + (b - a) * t;
       }
 
       function lerpColor(c1, c2, t) {
-        return `rgb(
-${lerp(c1[0], c2[0], t)},
-${lerp(c1[1], c2[1], t)},
-${lerp(c1[2], c2[2], t)}
-)`;
+        return `rgb(${lerp(c1[0], c2[0], t)},${lerp(c1[1], c2[1], t)},${lerp(
+          c1[2],
+          c2[2],
+          t
+        )})`;
       }
 
       function skyColor() {
@@ -267,7 +297,6 @@ ${lerp(c1[2], c2[2], t)}
         let t = (Date.now() / 1000) % 30;
 
         if (t < 10) return lerpColor(day, sunset, t / 10);
-
         if (t < 20) return lerpColor(sunset, night, (t - 10) / 10);
 
         return lerpColor(night, day, (t - 20) / 10);
@@ -290,6 +319,8 @@ ${lerp(c1[2], c2[2], t)}
           if (c.x < -50) c.x = canvas.width + 50;
         });
       }
+
+      /* BIRD */
 
       function drawBird() {
         let wing = Math.sin(bird.frame) * 5;
@@ -326,12 +357,13 @@ ${lerp(c1[2], c2[2], t)}
         ctx.restore();
       }
 
+      /* PIPES */
+
       function drawPipes() {
         pipes.forEach((pipe) => {
           ctx.fillStyle = "#22c55e";
 
           ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
-
           ctx.fillRect(
             pipe.x,
             pipe.bottom,
@@ -345,6 +377,8 @@ ${lerp(c1[2], c2[2], t)}
           ctx.fillRect(pipe.x - 5, pipe.bottom, pipe.width + 10, 20);
         });
       }
+
+      /* GROUND */
 
       function drawGround() {
         ctx.fillStyle = "#ded895";
@@ -362,12 +396,16 @@ ${lerp(c1[2], c2[2], t)}
         }
       }
 
+      /* PARTICLES */
+
       function drawParticles() {
         particles.forEach((p) => {
           ctx.fillStyle = "orange";
           ctx.fillRect(p.x, p.y, 4, 4);
         });
       }
+
+      /* DRAW */
 
       function draw() {
         drawBackground();
@@ -377,7 +415,7 @@ ${lerp(c1[2], c2[2], t)}
         drawGround();
       }
 
-      /* leaderboard */
+      /* LEADERBOARD */
 
       function renderLeaderboard() {
         let html = "<div class='font-bold mb-2'>Top Scores</div>";
@@ -393,6 +431,8 @@ ${lerp(c1[2], c2[2], t)}
 
         document.getElementById("leaderboard").innerHTML = html;
       }
+
+      /* GAME OVER */
 
       function gameOver() {
         running = false;
@@ -418,6 +458,8 @@ ${lerp(c1[2], c2[2], t)}
         playSound(200);
       }
 
+      /* LOOP */
+
       function loop() {
         update();
         draw();
@@ -425,23 +467,7 @@ ${lerp(c1[2], c2[2], t)}
         requestAnimationFrame(loop);
       }
 
-      function playSound(freq) {
-        let audio = new (window.AudioContext || window.webkitAudioContext)();
-
-        let osc = audio.createOscillator();
-        let gain = audio.createGain();
-
-        osc.connect(gain);
-        gain.connect(audio.destination);
-
-        osc.frequency.value = freq;
-        osc.type = "square";
-
-        gain.gain.setValueAtTime(0.1, audio.currentTime);
-
-        osc.start();
-        osc.stop(audio.currentTime + 0.1);
-      }
+      /* CLOUDS */
 
       function initClouds() {
         for (let i = 0; i < 5; i++) {
