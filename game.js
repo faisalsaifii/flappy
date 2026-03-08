@@ -107,7 +107,13 @@ function jump() {
 }
 
 document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") jump();
+  if (e.code === "Space") {
+    if (!running) {
+      start();
+    } else {
+      jump();
+    }
+  }
 
   if (e.key === "p") paused = !paused;
 });
