@@ -119,7 +119,10 @@ document.addEventListener("keydown", (e) => {
 });
 
 canvas.addEventListener("click", jump);
-canvas.addEventListener("touchstart", jump);
+canvas.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  jump();
+});
 
 /* PIPES */
 
