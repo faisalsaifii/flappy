@@ -59,16 +59,16 @@ let leaderboard = JSON.parse(localStorage.getItem("flappyBoard") || "[]");
 
 /* PHYSICS */
 
-const gravity = 0.32;
-const jumpPower = -6;
-const maxFall = 7;
+const getGravity = () => canvas.height * 0.0001;
+const getJumpPower = () => -canvas.height * 0.003;
+const getMaxFall = () => canvas.height * 0.011;
 
 function reset() {
   bird = {
     x: canvas.width * 0.25,
     y: canvas.height * 0.5,
     vel: 0,
-    size: 20,
+    size: Math.min(canvas.width, canvas.height) * 0.035,
     frame: 0,
   };
 
@@ -102,7 +102,7 @@ function restart() {
 function jump() {
   if (!running || paused) return;
 
-  bird.vel = jumpPower;
+  bird.vel = getJumpPower();
   playSound(700);
 }
 
@@ -127,8 +127,9 @@ canvas.addEventListener("touchstart", (e) => {
 /* PIPES */
 
 function spawnPipe() {
-  let gap = 170 - difficulty * 5;
-  if (gap < 110) gap = 110;
+  let gap = canvas.height * 0.25 - difficulty * 2;
+  let minGap = canvas.height * 0.15;
+  if (gap < minGap) gap = minGap;
 
   let top = Math.random() * (canvas.height * 0.5) + 40;
 
@@ -153,13 +154,13 @@ setInterval(() => {
 function update() {
   if (!running || paused) return;
 
-  bird.vel += gravity;
-  if (bird.vel > maxFall) bird.vel = maxFall;
+  bird.vel += getGravity();
+  if (bird.vel > getMaxFall()) bird.vel = getMaxFall();
 
   bird.y += bird.vel;
   bird.frame += 0.25;
 
-  if (bird.y > canvas.height - 80 || bird.y < 0) {
+  if (bird.y > canvas.height - canvas.height * 0.12 || bird.y < 0) {
     gameOver();
   }
 
@@ -263,7 +264,7 @@ function drawBackground() {
 /* BIRD */
 
 function drawBird() {
-  let wing = Math.sin(bird.frame) * 5;
+  let wing = Math.sin(bird.frame) * (bird.size * 0.25);
 
   ctx.save();
 
@@ -281,17 +282,25 @@ function drawBird() {
 
   ctx.fillStyle = "orange";
   ctx.beginPath();
-  ctx.ellipse(-5, wing, 8, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(
+    -bird.size * 0.25,
+    wing,
+    bird.size * 0.4,
+    bird.size * 0.2,
+    0,
+    0,
+    Math.PI * 2
+  );
   ctx.fill();
 
   ctx.fillStyle = "white";
   ctx.beginPath();
-  ctx.arc(8, -5, 6, 0, Math.PI * 2);
+  ctx.arc(bird.size * 0.4, -bird.size * 0.25, bird.size * 0.3, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = "black";
   ctx.beginPath();
-  ctx.arc(10, -5, 2, 0, Math.PI * 2);
+  ctx.arc(bird.size * 0.5, -bird.size * 0.25, bird.size * 0.1, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
